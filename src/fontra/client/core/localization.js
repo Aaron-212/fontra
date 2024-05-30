@@ -3,6 +3,7 @@ import { fetchJSON } from "./utils.js";
 
 const debugTranslation = false;
 let localizationData = {};
+let localizationFallbackData = {};
 
 export const languageController = new ObservableController({ language: "en" });
 languageController.synchronizeWithLocalStorage("fontra-language-");
@@ -11,11 +12,17 @@ function languageChanged(locale) {
   fetchJSON(`/lang/${locale}.json`).then((data) => {
     localizationData = data;
   });
+
+  if (locale !== "en") {
+    fetchJSON(`/lang/en.json`).then((data) => {
+      localizationFallbackData = data;
+    });
+  }
 }
 
 languageController.addKeyListener("language", (event) => {
   languageChanged(languageController.model.language);
-  // TODO: Implement a better way to localize the page
+  // TODO: Implement a better way to refresh the page
   // This method does not work perfectly on Chrome (and Edge maybe)
   window.location.reload(true);
 });
@@ -40,10 +47,14 @@ function formatString(template, ...args) {
  * @returns {string} The translated value
  */
 export function translate(key, ...args) {
-  const translation = localizationData[key];
+  let translation = localizationData[key];
 
-  if (typeof key !== "string" || translation === undefined || debugTranslation) {
+  if (typeof key !== "string" || debugTranslation) {
     return key;
+  }
+
+  if (translation === undefined) {
+    translation = localizationFallbackData[key];
   }
 
   return args.length > 0 ? formatString(translation, ...args) : translation;
@@ -56,10 +67,14 @@ export function translate(key, ...args) {
  * @returns {string} The translated value
  */
 export function translatePlural(key, quantity = 0) {
-  const translation = localizationData[key];
+  let translation = localizationData[key];
 
-  if (typeof key !== "string" || translation === undefined || debugTranslation) {
+  if (typeof key !== "string" || debugTranslation) {
     return key;
+  }
+
+  if (translation === undefined) {
+    translation = localizationFallbackData[key];
   }
 
   const translationPlural = localizationData[key + ".plural"];
