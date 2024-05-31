@@ -260,3 +260,6 @@ dist
 
 # Local plugins
 src/fontra/localplugins/
+
+# Zed editor
+.zed
